@@ -233,10 +233,12 @@ def run(typ, extraLibs=""):
   import platform
   from configlib import getstatusoutput
   from sstccvars import sstLdFlags, sstCppFlags
-  from sstccvars import prefix, execPrefix, includeDir, cc, cxx, spackcc, spackcxx
+  from sstccvars import prefix, execPrefix, includeDir, cc, cxx
   from sstccvars import sstCxxFlagsStr, sstCFlagsStr
   from sstccvars import includeDir
   from sstccvars import sstCore
+  from sstccvars import sstElements
+  from sstccvars import sstMpi
   from sstccvars import soFlagsStr
   from sstccvars import clangBin
   from sstccvars import clangCppFlagsStr, clangLdFlagsStr
@@ -317,8 +319,8 @@ def run(typ, extraLibs=""):
       ctx.cppFlags.append(clean)
 
   ctx.sstCore = sstCore
-  ctx.cc = spackcc if spackcc else cc
-  ctx.cxx = spackcxx if spackcxx else cxx
+  ctx.cc = cc
+  ctx.cxx = cxx
   ctx.typ = typ
   ctx.sstCore = sstCore
   ctx.hasClang = bool(clangCppFlagsStr)
@@ -387,28 +389,43 @@ def run(typ, extraLibs=""):
   from sstcompile import addModeDefines
   addModeDefines(ctx, args)
 
-  from sstlink import addModeLinks
-  addModeLinks(ctx, args)
-  
   #this is probably cmake being a jack-donkey during configure, overwrite it
   if args.std == "c++98": args.std = "c++1y"
+
+  print("simulate?\n")
 
   #if we are in simulate mode, we have to create the "replacement" environment
   #we do this by rerouting all the headers to SST/macro headers
   if ctx.simulateMode():
-    include_root = cleanFlag(includeDir)
-    repldir = os.path.join(include_root, "sstmac", "replacements")
+    print("yes\n")
+    repldir = os.path.join("-I", sstElements, "include/sst/elements/mercury/replacements")
     repldir = cleanFlag(repldir)
-    args.I.append(os.path.join(include_root, "sumi"))
+    print("inserting %s" % repldir)
     args.I.insert(0,repldir)
 
+    repldir = os.path.join("-I", sstElements, "include/sst/elements/mercury")
+    repldir = cleanFlag(repldir)
+    print("inserting %s" % repldir)
+    args.I.insert(0,repldir)
+
+    repldir = os.path.join("-I", sstMpi, "include")
+    repldir = cleanFlag(repldir)
+    print("inserting %s" % repldir)
+    args.I.insert(0,repldir)
+
+    elemdir = os.path.join("-I", sstElements, "include")
+    elemdir = cleanFlag(elemdir)
+    print(elemdir)
+    args.I.insert(0,elemdir) 
+
     #also force inclusion of wrappers
-    if typ == "c++":
-      ctx.directIncludes.append("cstdint")
-    else:
-      ctx.directIncludes.append("stdint.h")
-    ctx.directIncludes.append("sstmac/compute.h")
-    ctx.directIncludes.append("sstmac/skeleton.h")
+    #if typ == "c++":
+    #  ctx.directIncludes.append("cstdint")
+    #else:
+    #  ctx.directIncludes.append("stdint.h")
+    #ctx.directIncludes.append("sstmac/compute.h")
+    skelhead = os.path.join(sstElements, "include/sst/elements/mercury/common/skeleton.h")
+    ctx.directIncludes.append(skelhead)
 
     if not args.disable_mpi:
       args.I.insert(0,os.path.join(repldir, "mpi"))

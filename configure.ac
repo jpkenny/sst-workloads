@@ -161,12 +161,11 @@ if test "X$have_sst_mpi" = "Xyes"; then
   AC_CHECK_HEADERS([sst_mpi.h], [],
       [AC_MSG_ERROR([Could not locate SST MPI header files at $SST_MPI])])
 
-  AC_SUBST(SST_MPI_CPPFLAGS)
+  AM_CONDITIONAL([HAVE_SST_MPI],true)
+  AC_SUBST(SST_MPI)
   CPPFLAGS="$SAVE_CPPFLAGS"
   CXXFLAGS="$SAVE_CXXFLAGS"
 else
-  SST_MPI_CPPFLAGS=""
-  AC_SUBST(SST_MPI_CPPFLAGS)
   AM_CONDITIONAL([HAVE_SST_MPI], false)
 fi
 

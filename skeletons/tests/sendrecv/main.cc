@@ -1,4 +1,4 @@
-"""
+/**
 Copyright 2009-2023 National Technology and Engineering Solutions of Sandia,
 LLC (NTESS).  Under the terms of Contract DE-NA-0003525, the U.S. Government
 retains certain rights in this software.
@@ -40,64 +40,63 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Questions? Contact sst-macro-help@sandia.gov
-"""
-sstLdFlags = [
-'@LDFLAGS@',
-]
+*/
 
-haveFloat128=@have_float_128@
-clangCppFlagsStr="@CLANG_CPPFLAGS@"
-clangLdFlagsStr="@CLANG_LDFLAGS@"
-clangLibtoolingCxxFlagsStr="@CLANG_LIBTOOLING_CXX_FLAGS@ @MACSDK_CXXFLAGS@"
-clangLibtoolingCFlagsStr="@CLANG_LIBTOOLING_C_FLAGS@ @MACSDK_CFLAGS@"
-defaultIncludePaths="@DEFAULT_INCLUDE_PATHS@"
-clangBin="@CLANG_INSTALL_DIR@"
+#include <sst_mpi.h>
+#include <stddef.h>
+#include <stdio.h>
 
-sstCppFlags = [
-"@SST_CPPFLAGS@",
-"@CPPFLAGS@",
-"-I${includedir}",
-"-I${includedir}/include",
-]
+int main(int argc, char** argv)
+{
+  MPI_Init(&argc, &argv);
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-clangDir="@CLANG_INSTALL_DIR@"
+  int nelems = 100; 
+#define VALIDATE_BUFFERS
+#ifdef VALIDATE_BUFFERS
+  int buf[1024];
+  if (rank == 0){
+    for (int i=0; i < nelems; ++i){
+      buf[i] = i;
+    }
+  } else {
+    for (int i=0; i < nelems; ++i){
+      buf[i] = -1;
+    }
+  }
+#else
+  void* buf = sstmac_nullptr;
+#endif
 
-sstCore=bool("@SST_CPPFLAGS@")
-sstElements="@SST_ELEMENTS@"
-sstMpi="@SST_MPI@"
-soFlagsStr="@LD_SO_FLAGS@"
+  int tag = 42;
+  if (rank == 0){
+    int partner = 1;
+    MPI_Send(buf, nelems, MPI_INT, partner, tag, MPI_COMM_WORLD);
+  } else {
+    int partner = 0;
+    MPI_Recv(buf, nelems, MPI_INT, partner, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+#ifdef VALIDATE_BUFFERS
+    for (int i=0; i < nelems; ++i){
+      if (buf[i] != i){
+        printf("A[%d] = %d != %d\n", i, buf[i], i);
+      }
+    }
+#endif
+  }
 
-srcDir="@abs_top_srcdir@"
-buldDir="@abs_top_builddir@"
-prefix="@prefix@"
-execPrefix="@exec_prefix@"
-includeDir="@includedir@"
-sstStdFlag="@STD_CXXFLAGS@"
-sstCxxFlagsStr="@CXXFLAGS@ @SST_CXXFLAGS@ @STD_CXXFLAGS@"
-sstCFlagsStr="@CFLAGS@"
-cc="@CC@"
-cxx="@CXX@"
+  MPI_Barrier(MPI_COMM_WORLD);
 
-# Configure the PYTHONPATH
-def setPythonPath():
-  relpath = inspect.getfile(inspect.currentframe()) # script filename (usually with path)
-  abspath = os.path.abspath(relpath)
-  my_folder = os.path.dirname(abspath)
+  if (rank == 0){
+    printf("Rank 0 finished at t=%8.4f ms\n", MPI_Wtime()*1e3);
+  }
 
-  my_sstmpi_include_dir = None
+  MPI_Finalize();
 
-  my_src_folder = os.path.join(my_folder, "pysst")
-  if (os.path.isdir(my_src_folder)):
-      my_sstmpi_include_dir = os.path.join(*os.path.split(my_folder)[:-1])
-      sys.path.append(my_folder)
+  if (rank == 0){
+    printf("Passed finalize\n");
+  }
 
-  my_inc_folder = os.path.join(*os.path.split(my_folder)[:-1])
-  my_inc_folder = os.path.join(my_inc_folder, "include", "sst-mpi")
-  if (os.path.isdir(my_inc_folder)):
-      sys.path.append(my_inc_folder)
-      if not my_sstmpi_include_dir:
-          my_sstmpi_include_dir = os.path.join(my_inc_folder, "include")
-
-
-
-
+  return 0;
+}
