@@ -42,9 +42,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Questions? Contact sst-macro-help@sandia.gov
 */
 
+#define ssthg_app_name runsendrecv
+
 #include <sst_mpi.h>
 #include <stddef.h>
 #include <stdio.h>
+
+#include <common/skeleton.h>
 
 int main(int argc, char** argv)
 {
@@ -67,7 +71,7 @@ int main(int argc, char** argv)
     }
   }
 #else
-  void* buf = sstmac_nullptr;
+  void* buf = sst_hg_nullptr;
 #endif
 
   int tag = 42;
