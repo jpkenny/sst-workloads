@@ -47,6 +47,7 @@ Questions? Contact sst-macro-help@sandia.gov
 #include <sst_mpi.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <iostream>
 
 #include <common/skeleton.h>
 
@@ -57,10 +58,10 @@ int main(int argc, char** argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  int nelems = 100; 
+  int nelems = 8; 
 #define VALIDATE_BUFFERS
 #ifdef VALIDATE_BUFFERS
-  int buf[1024];
+  int buf[128];
   if (rank == 0){
     for (int i=0; i < nelems; ++i){
       buf[i] = i;
@@ -87,6 +88,9 @@ int main(int argc, char** argv)
         printf("A[%d] = %d != %d\n", i, buf[i], i);
       }
     }
+    for (int i=0; i < nelems; ++i){
+      printf("A[%d] = %d\n", i, buf[i]);
+    }
 #endif
   }
 
@@ -97,10 +101,6 @@ int main(int argc, char** argv)
   }
 
   MPI_Finalize();
-
-  if (rank == 0){
-    printf("Passed finalize\n");
-  }
 
   return 0;
 }
